@@ -36,7 +36,6 @@ from trading_calendars import get_calendar
 from zipline.data.bar_reader import (
     NoDataAfterDate,
     NoDataBeforeDate,
-    NoDataForSid,
     NoDataOnDate,
 )
 from zipline.data.bcolz_daily_bars import BcolzDailyBarWriter
@@ -124,7 +123,7 @@ ca_info = DataFrame(
 ca_info['exchange'] = 'TSX'
 
 EQUITY_INFO = concat([us_info, ca_info])
-EQUITY_INFO['symbol'] = [chr(ord('A') + n) for n in range(len(EQUITY_INFO))]
+EQUITY_INFO['symbol'] = [chr(ord('A') + x) for x in range(len(EQUITY_INFO))]
 
 TEST_QUERY_ASSETS = EQUITY_INFO.index
 
@@ -219,7 +218,8 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
                 result,
                 expected_bar_values_2d(
                     dates,
-                    EQUITY_INFO.loc[assets],
+                    assets,
+                    EQUITY_INFO.loc[self.assets],
                     column,
                     holes=self.holes,
                 )
@@ -306,6 +306,46 @@ class _DailyBarsTestCase(WithEquityDailyBarData,
                 start_date=self.sessions[0],
                 end_date=self.asset_end(asset),
             )
+
+    def test_read_known_and_unknown_sids(self):
+        """
+        Test a query with some known sids mixed in with unknown sids.
+        """
+
+        # Contruct a list of alternating valid and invalid query sids,
+        # bookended by invalid sids.
+        #
+        # E.g.
+        #   INVALID VALID INVALID VALID ... VALID INVALID
+        query_assets = (
+            [self.assets[-1] + 1] +
+            range(self.assets[0], self.assets[-1] + 1) +
+            [self.assets[-1] + 3]
+        )
+
+        columns = ['close', 'volume']
+        self._check_read_results(
+            columns,
+            query_assets,
+            start_date=TEST_QUERY_START,
+            end_date=TEST_QUERY_STOP,
+        )
+
+    def test_read_only_unknown_sids(self):
+        """
+        Test a query where all sids are unknown.
+        """
+
+        # Query for only even sids, only odd ids are valid.
+        query_assets = [2, 4, 800]
+
+        columns = ['close', 'volume']
+        self._check_read_results(
+            columns,
+            query_assets,
+            start_date=TEST_QUERY_START,
+            end_date=TEST_QUERY_STOP,
+        )
 
     def test_unadjusted_get_value(self):
         """Test get_value() on both a price field (CLOSE) and VOLUME."""
@@ -646,42 +686,6 @@ class _HDF5DailyBarTestCase(WithHDF5EquityMultiCountryDailyBarReader,
                 msg=(
                     'asset_start_dates value for sid={} differs from expected'
                 ).format(sid)
-            )
-
-    def test_invalid_sid(self):
-        INVALID_SID = 100
-
-        with self.assertRaises(NoDataForSid):
-            self.daily_bar_reader.load_raw_arrays(
-                OHLCV,
-                TEST_QUERY_START,
-                TEST_QUERY_STOP,
-                [INVALID_SID],
-            )
-
-        with self.assertRaises(NoDataForSid):
-            self.daily_bar_reader.get_value(
-                INVALID_SID,
-                TEST_QUERY_START,
-                'close',
-            )
-
-    def test_invalid_sid_single_country(self):
-        INVALID_SID = 100
-
-        with self.assertRaises(NoDataForSid):
-            self.single_country_reader.load_raw_arrays(
-                OHLCV,
-                TEST_QUERY_START,
-                TEST_QUERY_STOP,
-                [INVALID_SID],
-            )
-
-        with self.assertRaises(NoDataForSid):
-            self.single_country_reader.get_value(
-                INVALID_SID,
-                TEST_QUERY_START,
-                'close',
             )
 
     def test_invalid_date(self):
