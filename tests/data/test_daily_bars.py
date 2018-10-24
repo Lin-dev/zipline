@@ -82,43 +82,43 @@ us_info = DataFrame(
     [
         # 1) The equity's trades start and end before query.
         {'start_date': '2015-06-01', 'end_date': '2015-06-05'},
-        # 2) The equity's trades start and end after query.
+        # 3) The equity's trades start and end after query.
         {'start_date': '2015-06-22', 'end_date': '2015-06-30'},
-        # 3) The equity's data covers all dates in range (but we define
+        # 5) The equity's data covers all dates in range (but we define
         #    a hole for it on 2015-06-17).
         {'start_date': '2015-06-02', 'end_date': '2015-06-30'},
-        # 4) The equity's trades start before the query start, but stop
+        # 7) The equity's trades start before the query start, but stop
         #    before the query end.
         {'start_date': '2015-06-01', 'end_date': '2015-06-15'},
-        # 5) The equity's trades start and end during the query.
+        # 9) The equity's trades start and end during the query.
         {'start_date': '2015-06-12', 'end_date': '2015-06-18'},
-        # 6) The equity's trades start during the query, but extend through
+        # 11) The equity's trades start during the query, but extend through
         #    the whole query.
         {'start_date': '2015-06-15', 'end_date': '2015-06-25'},
     ],
-    index=arange(1, 7),
+    index=arange(1, 12, step=2),
     columns=['start_date', 'end_date'],
 ).astype('datetime64[ns]')
 us_info['exchange'] = 'NYSE'
 
 ca_info = DataFrame(
     [
-        # 7) The equity's trades start and end before query.
+        # 13) The equity's trades start and end before query.
         {'start_date': '2015-06-01', 'end_date': '2015-06-05'},
-        # 8) The equity's trades start and end after query.
+        # 15) The equity's trades start and end after query.
         {'start_date': '2015-06-22', 'end_date': '2015-06-30'},
-        # 9) The equity's data covers all dates in range.
+        # 17) The equity's data covers all dates in range.
         {'start_date': '2015-06-02', 'end_date': '2015-06-30'},
-        # 10) The equity's trades start before the query start, but stop
+        # 19) The equity's trades start before the query start, but stop
         #    before the query end.
         {'start_date': '2015-06-01', 'end_date': '2015-06-15'},
-        # 11) The equity's trades start and end during the query.
+        # 21) The equity's trades start and end during the query.
         {'start_date': '2015-06-12', 'end_date': '2015-06-18'},
-        # 12) The equity's trades start during the query, but extend through
+        # 23) The equity's trades start during the query, but extend through
         #    the whole query.
         {'start_date': '2015-06-15', 'end_date': '2015-06-25'},
     ],
-    index=arange(7, 13),
+    index=arange(13, 24, step=2),
     columns=['start_date', 'end_date'],
 ).astype('datetime64[ns]')
 ca_info['exchange'] = 'TSX'
@@ -129,8 +129,8 @@ EQUITY_INFO['symbol'] = [chr(ord('A') + n) for n in range(len(EQUITY_INFO))]
 TEST_QUERY_ASSETS = EQUITY_INFO.index
 
 HOLES = {
-    'US': {3: (Timestamp('2015-06-17', tz='UTC'),)},
-    'CA': {9: (Timestamp('2015-06-17', tz='UTC'),)},
+    'US': {5: (Timestamp('2015-06-17', tz='UTC'),)},
+    'CA': {17: (Timestamp('2015-06-17', tz='UTC'),)},
 }
 
 
@@ -509,27 +509,27 @@ class BcolzDailyBarTestCase(WithBcolzEquityDailyBarReader, _DailyBarsTestCase):
         result = self.bcolz_daily_bar_ctable
         expected_first_row = {
             '1': 0,
-            '2': 5,   # Asset 1 has 5 trading days.
-            '3': 12,  # Asset 2 has 7 trading days.
-            '4': 33,  # Asset 3 has 21 trading days.
-            '5': 44,  # Asset 4 has 11 trading days.
-            '6': 49,  # Asset 5 has 5 trading days.
+            '3': 5,    # Asset 1 has 5 trading days.
+            '5': 12,   # Asset 3 has 7 trading days.
+            '7': 33,   # Asset 5 has 21 trading days.
+            '9': 44,   # Asset 7 has 11 trading days.
+            '11': 49,  # Asset 9 has 5 trading days.
         }
         expected_last_row = {
             '1': 4,
-            '2': 11,
-            '3': 32,
-            '4': 43,
-            '5': 48,
-            '6': 57,    # Asset 6 has 9 trading days.
+            '3': 11,
+            '5': 32,
+            '7': 43,
+            '9': 48,
+            '11': 57,    # Asset 6 has 9 trading days.
         }
         expected_calendar_offset = {
-            '1': 0,   # Starts on 6-01, 1st trading day of month.
-            '2': 15,  # Starts on 6-22, 16th trading day of month.
-            '3': 1,   # Starts on 6-02, 2nd trading day of month.
-            '4': 0,   # Starts on 6-01, 1st trading day of month.
-            '5': 9,   # Starts on 6-12, 10th trading day of month.
-            '6': 10,  # Starts on 6-15, 11th trading day of month.
+            '1': 0,    # Starts on 6-01, 1st trading day of month.
+            '3': 15,   # Starts on 6-22, 16th trading day of month.
+            '5': 1,    # Starts on 6-02, 2nd trading day of month.
+            '7': 0,    # Starts on 6-01, 1st trading day of month.
+            '9': 9,    # Starts on 6-12, 10th trading day of month.
+            '11': 10,  # Starts on 6-15, 11th trading day of month.
         }
         self.assertEqual(result.attrs['first_row'], expected_first_row)
         self.assertEqual(result.attrs['last_row'], expected_last_row)
@@ -570,8 +570,8 @@ class BcolzDailyBarWriterMissingDataTestCase(WithAssetFinder,
                                              WithTmpDir,
                                              WithTradingCalendars,
                                              ZiplineTestCase):
-    # Sid 3 is active from 2015-06-02 to 2015-06-30.
-    MISSING_DATA_SID = 3
+    # Sid 5 is active from 2015-06-02 to 2015-06-30.
+    MISSING_DATA_SID = 5
     # Leave out data for a day in the middle of the query range.
     MISSING_DATA_DAY = Timestamp('2015-06-15', tz='UTC')
 
